@@ -1,62 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
 #include <string.h>
 
 int main()
 {
     int pipe_fd[2];
-    __pid_t pid;
+    pipe(pipe_fd);
 
-    if (pipe(pipe_fd) == -1)
+    if (fork() > 0)
     {
-     perror("Error al crear al pipe");
-     return 1;
-    }
+       close (pipe_fd[0]);
+       char caracteres[20];
 
-    pid = fork();
-    
-    if (pid > 0)
-    {
-        close(pipe_fd[0]);//EL padre deja de leer
+       while (1)
+       {
+        printf("Introduce un número para ser sumado, o un + para terminar el programa: ");
+         scanf("%s", caracteres);
+        caracteres[strcspn(caracteres, "\n")] = '\0';//Limpia el salto de línea en el buffer
+        write(pipe_fd[1], caracteres, strlen(caracteres)+1);
 
-        char numeros[20];
-        while (1)
-        {
-            printf("Ingresa un número. Al presionar + terminas y obtendrás las sumas de los numeros introducidos\n");
-            fgets(numeros, sizeof(numeros), stdin);
-             numeros[strcspn(numeros, "\n")] = '\0';//Evita el salto de linea
-
-            write(pipe_fd[1], numeros, strlen(numeros) + 1);//Escribe en el pipe
-
-            if (strcmp(numeros, "+") == 0) 
-            break;//Termina si se escribe un +
+        if (strcmp(caracteres, "+") == 0)// Termina el programa al escribir el simobolo más
+        break;
         
-        }
-
-        close(pipe_fd[1]);//Cierra la escritura en el padre
+       }
+       close(pipe_fd[1]);//Termina de escribir en el padre
     }
     else
     {
-        close(pipe_fd[1]);///Cierra la escritura en el hijo
-        char buffer[20];
-        int suma = 0;
+      close(pipe_fd[1]);//Cierra la escritura en el hijo
+      char caracteres[20];
+      int suma = 0;
 
-        //Lee el pipe
-        while (1)
-        {
-            read(pipe_fd[0], buffer, sizeof(buffer));
-            if (strcmp(buffer, "+")== 0)
-            break;
-            int num = atoi(buffer);
-            printf("Número: %d\n", num);
-            suma += num;///Suma los numeros
-        }
-        printf("La suma total es: %d\n", suma);//Muestra la suma
-        close(pipe_fd[0]);//Cierra la lectura del hijo
-        
+      //Condición de suma
+      while (1)
+      {
+        read(pipe_fd[0], caracteres, sizeof(caracteres));
+        if (strcmp(caracteres, "+") == 0)
+        break;
+        int num = atoi(caracteres);
+        printf("\nNúmero a sumar: %d\n", num);
+        suma += num;
+      
+      }
+      printf("\nRecibido el caracter + \n");
+      printf ("La suma total es: %d\n", suma);
+      close (pipe_fd[0]); //Termina la lectura del hijo
+      
     }
-    return 0;
-    
+
+   return 0; 
 }
