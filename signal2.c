@@ -4,11 +4,13 @@
 #include <signal.h>
 #include <time.h>
 
+int tiempo = 0;
+
 void manejar_alarma(int sig)
 {
-    int segundos;
-    segundos++;
-    printf("Tiempo trasncurrido: %d segundos\n", segundos);
+    tiempo +=5;
+    printf("Tiempo trasncurrido: %d segundos\n", tiempo);
+    alarm(5);
 }
 
 int main()
